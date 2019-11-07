@@ -1,0 +1,78 @@
+// Freshwork Intern Submission
+
+    import UIKit
+    import AFNetworking
+    class ViewController: UIViewController, UITableViewDataSource, 
+    UITableViewDelegate, UISearchBarDelegate {
+    var movies: [NSDictionary]?
+    @IBOutlet weak var txtSearch: UITextField!
+    @IBOutlet weak var tableView: UITableView!
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        tableView.dataSource = self
+        tableView.delegate = self
+     fetchMovies()
+     searchBar()
+    }
+    func searchBar(){
+        let searchBar = UISearchBar(frame: CGRect(x: 0, y: 0, width: 
+        self.view.frame.width, height: 50))
+        searchBar.delegate = self
+        searchBar.showsScopeBar = true
+        searchBar.tintColor = UIColor.lightGray
+        searchBar.scopeButtonTitles = ["Now Playing"]
+        self.tableView.tableHeaderView = searchBar
+        }
+       func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) 
+      {
+        if searchText == ""{
+            fetchMovies()
+        }else{
+            if searchBar.selectedScopeButtonIndex == 0 {
+                movies = movies?.filter({ (movies) -> Bool in
+                    return movies.title.lowercased()
+                })
+            }
+        }
+    }
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int{
+        return movies?.count ?? 0
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell{
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! MovieTableViewCell
+
+        let movie = movies![indexPath.row]
+        let title = movie["title"] as! String
+        let posterPath = movie["poster_path"] as! String
+        let baseUrl = "https://image.tmdb.org/t/p/w300/"
+        let imageUrl = NSURL(string: baseUrl + posterPath)
+        cell.lblTitle.text = title
+        cell.imgMovie.setImageWith(imageUrl! as URL)
+        print("row \(indexPath.row)")
+        return cell
+
+    }
+    func fetchMovies(){
+        let apiKey = "2c0a8efe934c162f5535ff33303e70bd"
+        let url = NSURL(string: "http://www.omdbapi.com/?apikey=[apikey]&")
+        let request = URLRequest(url: url! as URL, cachePolicy: NSURLRequest.CachePolicy.reloadIgnoringCacheData, timeoutInterval: 10)
+        let session = URLSession(
+            configuration: URLSessionConfiguration.default, delegate: nil, delegateQueue: OperationQueue.main
+        )
+        let task: URLSessionDataTask =  session.dataTask(with: request, completionHandler:{(dataOrNil, repsonse, error) in
+            if let data = dataOrNil {
+                if let responseDictionary = try! JSONSerialization.jsonObject(with: data, options: []) as? NSDictionary{print("response: \(responseDictionary)")
+                    self.movies = responseDictionary["results"] as? [NSDictionary]
+                    self.tableView.reloadData()
+
+                }
+            }
+
+        })
+            task.resume()
+    }
+
+    @IBAction func btnBookmark(_ sender: UIButton) {
+    }
+    }
